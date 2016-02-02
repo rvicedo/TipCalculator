@@ -1,5 +1,7 @@
 package com.richard.tipcalculator;
 
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -10,6 +12,7 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -17,6 +20,8 @@ import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
+
+import java.text.NumberFormat;
 
 public class MainActivity extends AppCompatActivity implements OnEditorActionListener {
 
@@ -28,11 +33,13 @@ public class MainActivity extends AppCompatActivity implements OnEditorActionLis
     private TextView perPersonLabel;
     private TextView perPersonTextView;
     private SeekBar percentSeekBar;
-    private RadioGroup roundingRadioGroup;
-    private RadioButton noneRadioButton;
-    private RadioButton tipRadioButton;
-    private RadioButton totalRadioButton;
-    private Spinner splitSpinner;
+    private Button percentButton;
+
+    private String billAmountString;
+    private String tipAmountString;
+    private String totalAmountString;
+
+    private SharedPreferences savedValues;
 
 
     @Override
@@ -46,13 +53,8 @@ public class MainActivity extends AppCompatActivity implements OnEditorActionLis
         percentSeekBar = (SeekBar) findViewById(R.id.percentSeekBar);
         tipTextView = (TextView) findViewById(R.id.tipTextView);
         totalTextView = (TextView) findViewById(R.id.totalTextView);
-        roundingRadioGroup = (RadioGroup) findViewById(R.id.roundingRadioGroup);
-        noneRadioButton = (RadioButton) findViewById(R.id.noneRadioButton);
-        tipRadioButton = (RadioButton) findViewById(R.id.tipRadioButton);
-        totalRadioButton = (RadioButton) findViewById(R.id.totalRadioButton);
-        splitSpinner = (Spinner) findViewById(R.id.splitSpinner);
-        perPersonLabel = (TextView) findViewById(R.id.perPersonLabel);
-        perPersonTextView = (TextView) findViewById(R.id.perPersonTextView);
+        percentButton = (Button) findViewById(R.id.percentButton);
+
 
         //set listeners
         billAmountEditText.setOnEditorActionListener(this); //current class
@@ -60,9 +62,20 @@ public class MainActivity extends AppCompatActivity implements OnEditorActionLis
         SeekBarListener seekBarListener = new SeekBarListener(); //named class
         percentSeekBar.setOnSeekBarChangeListener(seekBarListener);
 
+        percentButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                calculateAndDisplay();
+            }
+        });
+
+
+        savedValues = getSharedPreferences("SavedValues", MODE_PRIVATE);
+
+
         //roundingRadioGroup.setOnCheckedChangeListener(radioListener); //anonymous class
 
 
+        //adapter for spinner
 
     }
 
@@ -90,11 +103,11 @@ public class MainActivity extends AppCompatActivity implements OnEditorActionLis
 
     @Override
     public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+        //billAmountString = billAmountEditText.getText().toString();
 
         if(actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_UNSPECIFIED) {
             calculateAndDisplay();
         }
-
 
         return false;
     }
@@ -105,7 +118,6 @@ public class MainActivity extends AppCompatActivity implements OnEditorActionLis
         @Override
         public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
             percentTextView.setText(progress  + "\u0025");
-
         }
 
         @Override
@@ -115,7 +127,7 @@ public class MainActivity extends AppCompatActivity implements OnEditorActionLis
 
         @Override
         public void onStopTrackingTouch(SeekBar seekBar) {
-            calculateAndDisplay();
+            //calculateAndDisplay();
         }
     }
 
@@ -141,8 +153,57 @@ public class MainActivity extends AppCompatActivity implements OnEditorActionLis
 */
 
     private void calculateAndDisplay() {
+        billAmountString = billAmountEditText.getText().toString();
 
+        float billAmount;
+
+        if (billAmountString.equals("")) {
+            billAmount = 0;
+        }
+        else {
+            billAmount = Float.parseFloat(billAmountString);
+        }
+
+        String percentString = percentTextView.getText().toString();
+        percentString = percentString.substring(0, percentString.length()-1);
+        float percent = Float.parseFloat(percentString);
+
+        //calculate tip and total
+        float tipAmount = billAmount * percent / 100.0f;
+        tipAmountString = Float.toString(tipAmount);
+        float totalAmount = billAmount + tipAmount;
+        totalAmountString = Float.toString(totalAmount);
+
+        //set tip text
+        NumberFormat tip = NumberFormat.getCurrencyInstance();
+        tipTextView.setText(tip.format(tipAmount));
+
+        //set total text
+        NumberFormat total = NumberFormat.getCurrencyInstance();
+        totalTextView.setText(total.format(totalAmount));
+
+        billAmountEditText.setText(billAmountString);
     }
+
+
+    @Override
+    protected void onPause() {
+        Editor editor = savedValues.edit();
+        editor.putString("billAmountString", billAmountString);
+        editor.commit();
+
+        super.onPause();
+    }
+
+    @Override
+    protected void onResume() {
+        billAmountString = savedValues.getString("billAmountString", "");
+        billAmountEditText.setText(billAmountString);
+        calculateAndDisplay();
+
+        super.onResume();
+    }
+
 }
 
 
