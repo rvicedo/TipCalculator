@@ -23,6 +23,8 @@ import android.widget.TextView.OnEditorActionListener;
 
 import java.text.NumberFormat;
 
+//1
+
 public class MainActivity extends AppCompatActivity implements OnEditorActionListener {
 
     //define instance variables
