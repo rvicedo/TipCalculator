@@ -24,6 +24,7 @@ import android.widget.TextView.OnEditorActionListener;
 import java.text.NumberFormat;
 
 //1
+//2
 
 public class MainActivity extends AppCompatActivity implements OnEditorActionListener {
 
